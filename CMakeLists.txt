@@ -7,5 +7,5 @@ find_package(SDL2 REQUIRED)
 
 include_directories(${SDL2_INCLUDE_DIR})
 
-add_executable(3dRenderer white_window.cpp)
+add_executable(3dRenderer SDL_loop.cpp VertexArrayObject.cpp VertexArrayObject.h main.cpp render.h render.cpp SDL_loop.h)
 target_link_libraries(3dRenderer ${SDL2_LIBRARY})

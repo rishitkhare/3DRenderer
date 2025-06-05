@@ -17,13 +17,13 @@ int init_window(SDL_Window **windowOut, SDL_Surface **screenSurfaceOut) {
 
     // The window will contain a single surface
     SDL_Surface *screenSurface = NULL;
+
     /*
      * An SDL_Surface is a 2D image. A 2D image can be loaded from a file or
      * be the image inside a window. (We are using the second use case)
      *
      * SDL_Surfaces are used for CPU rendering
      */
-
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) { // SDL_Init returns -1 upon error
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -62,15 +62,28 @@ void doLoop(SDL_Window *window, SDL_Surface *screenSurface) {
     SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0x00, 0x00, 0x00));
 
     // dummy data for the triangles - a green triangle
-    Tri singleTri[] = {
+    Tri twoTris[] = {
             {
-        {300,50,0},
-        {400,300,0},
-        {200,300,0}
+        {325,100,0},
+        {375,150,0},
+        {275,150,0}
+        },
+    {
+        {325,200,0},
+        {375,150,0},
+        {200,150,0}
+        },
+    {
+        {400.0f, 100.0f, 0.0f},
+        {300.0f, 400.0f, 0.0f},
+        {100.0f, 300.0f, 0.0f}
         }
+
     };
 
-    render3D(singleTri,1,screenSurface);
+    Camera c;
+
+    render3D(twoTris,3,screenSurface, c);
     // Update the surface
     SDL_UpdateWindowSurface(window);
 

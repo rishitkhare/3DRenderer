@@ -4,10 +4,23 @@
  * Take an array of triangles (in world space)
  * and converts them all into screen space (z=0).
  */
-void convertToWindowCoordinates(Tri *meshdata, int triCount, Tri *screenSpaceData) {
+void convertToWindowCoordinates(Tri *meshdata, int triCount, Tri *screenSpaceData, Camera c) {
     for(int i = 0; i < triCount; i++) {
         // TODO perform space transformations
         //   (currently no transformations are applied and we just directly copy the data)
+        Vector3 world;
+        Vector3 camera;
+
+        // right.x   right.y   right.z      x
+        // up.x      up.y.     up.x         y
+        // target.x  target.y  target.z     z
+
+        //
+
+        world.x = camera.x * c.right.x + camera.y * c.up.x + camera.z * c.target.x;
+        world.y = camera.x * c.right.y + camera.y * c.up.y + camera.z * c.target.y;
+        world.z = camera.x * c.right.z + camera.y * c.up.z + camera.z * c.target.z;
+
         screenSpaceData[i] = meshdata[i];
     }
 }
@@ -33,18 +46,18 @@ void renderTris(Tri *screenSpaceData, int triCount, SDL_Surface *surface) {
         for(int y = 0; y < surface->h; y++) {
             for(int x = 0; x < surface->w; x++) {
                 // address arithmetic - "pitch" tells us the length of each row, in bytes,
-                // and each individual pixel is a uint32.
+                // and each individual pixel is an uint32.
                 Uint32 *currentPixel = ((Uint32*) (((char*) pixels) + (surface->pitch * y))) + x;
 
                 Vector3 tricoord = barycentric(currentTri, {(float) x,(float) y, 0.0});
-                if(tricoord.x > 0 && tricoord.y > 0 && tricoord.z > 0) {
+                if(tricoord.x >= 0 && tricoord.y >= 0 && tricoord.z >= 0) {
                     // the point is within the triangle
                     *currentPixel = trianglePixelValue;
                 }
             }
         }
     }
-    
+
     SDL_UnlockSurface(surface);
 }
 
@@ -80,11 +93,12 @@ Vector3 barycentric(Tri t, Vector3 p) {
 /*
  * Put it all together.
  */
-void render3D(Tri *meshdata, int triCount, SDL_Surface *screen) {
+void render3D(Tri *meshdata, int triCount, SDL_Surface *screen, Camera c) {
     // space transforms
     Tri *screenspace = (Tri*) malloc(sizeof(Tri) * triCount);
-    convertToWindowCoordinates(meshdata, triCount, screenspace);
+    convertToWindowCoordinates(meshdata, triCount, screenspace, c);
 
     // put triangles through the rasterizer!
     renderTris(screenspace, triCount, screen);
+    free(screenspace);
 }

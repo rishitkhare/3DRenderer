@@ -11,10 +11,12 @@
 // gets the subtraction of two vectors
 #define VEC_SUB(a,b) ((Vector3){a.x - b.x, a.y - b.y, a.z - b.z});
 
-void render3D(Tri *meshdata, int triCount, SDL_Surface *screen, Camera c);
+void render3D(Tri *meshdata, int triCount, SDL_Surface *screen, Mat4 cam);
 
-void convertToWindowCoordinates(Tri meshdata[], int triCount, Tri *screenSpaceData[], Camera c);
+void convertToWindowCoordinates(Tri meshdata[], int triCount, Tri *screenSpaceData[], Mat4 cam);
 
 void renderTris(Tri *screenSpaceData[], int triCount, SDL_Surface *surface);
+
+SDL_Color interpolateColor(Tri t, Vector3 b);
 
 Vector3 barycentric(Tri t, Vector3 p);

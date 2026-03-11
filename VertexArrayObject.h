@@ -1,11 +1,17 @@
 #include "SDL.h"
 #include "linalg.h"
 
+// vertex object
+struct Vert {
+    Vector3 position;
+    SDL_Color color;
+};
+
 // a triangle in 3D space
 struct Tri {
-    Vector3 a1;
-    Vector3 a2;
-    Vector3 a3;
+    Vert v1;
+    Vert v2;
+    Vert v3;
 };
 
 // orthonormal basis for the camera space

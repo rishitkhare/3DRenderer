@@ -1,6 +1,16 @@
 #include <stdio.h>
 #include "linalg.h"
 
+
+Vector4 vec4(Vector3 v) {
+    return {v.x, v.y, v.z, 1};
+}
+
+Vector3 vec3(Vector4 v) {
+    return {v.x, v.y, v.z};
+}
+
+
 // matrix multiplication (4x4 times 4x4)
 Mat4 multiply(Mat4 a, Mat4 b) {
     Mat4 result;

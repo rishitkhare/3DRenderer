@@ -5,6 +5,9 @@
 #define DET4(a,b,c,d, e,f,g,h, i,j,k,l, m,n,o,p) (a*DET3(f,g,h,j,k,l,n,o,p) - b*DET3(e,g,h,i,k,l,m,o,p) + \
                                                  c*DET3(e,f,h,i,j,l,m,n,p) - d*DET3(e,f,g,i,j,k,m,n,o))
 
+
+#define IDENTITY {{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}}
+
 // A point in 3D space
 struct Vector3 {
     float x;
@@ -27,6 +30,10 @@ struct Vector4 {
 struct Mat4 {
     float values[4][4];
 };
+
+Vector4 vec4(Vector3 v);
+
+Vector3 vec3(Vector4 v);
 
 Mat4 multiply(Mat4 a, Mat4 b);
 

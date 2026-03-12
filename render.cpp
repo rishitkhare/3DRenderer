@@ -1,5 +1,37 @@
 #include "render.h"
 
+
+float **zbuf = NULL;
+
+void resetZbuf(int x, int y) {
+    // set all values in buffer to infinity
+    for(int i = 0; i < x; i++) {
+        for(int j = 0; j < y; j++) {
+            zbuf[i][j] = INFINITY;
+        }
+    }
+}
+
+void initZBuf(int x, int y) {
+    if(zbuf == NULL) {
+        zbuf = (float **) malloc(sizeof(float*) * x);
+        for(int i = 0; i < x; i++) {
+            zbuf[i] = (float*) malloc(sizeof(float) * y);
+        }
+    }
+
+    resetZbuf(x, y);
+}
+
+
+
+void destructZbuf(int x, int y) {
+    for(int i = 0; i < x; i++) {
+        free(zbuf[i]);
+    }
+    free(zbuf);
+}
+
 /*
  * Take an array of triangles (in camera space)
  * and converts them all into screen space.
@@ -10,8 +42,7 @@ void convertToWindowCoordinates(Tri *meshdata, int triCount, Tri *result, Mat4 c
     float far = 80000.f; // plane defined as z = far
     float clipRange = far - near;
 
-
-    // The inital division by z
+    // matrix to convert a scree
     Mat4 planeToScreen {{
             {180, 0, 0, 180},
             {0, -180, 0, 180},
@@ -41,6 +72,13 @@ void convertToWindowCoordinates(Tri *meshdata, int triCount, Tri *result, Mat4 c
 }
 
 /*
+ * Takes a triangle and set of barycentric coordinates and returns an interpolated z value
+ */
+float interpolateZ(Tri t, Vector3 b) {
+    return t.v1.position.z * b.x + t.v2.position.z * b.y + t.v3.position.z * b.z;
+}
+
+/*
  * Take a set of screen-space triangles and rasterize them to the surface
  */
 void renderTris(Tri *screenSpaceData, int triCount, SDL_Surface *surface) {
@@ -62,11 +100,23 @@ void renderTris(Tri *screenSpaceData, int triCount, SDL_Surface *surface) {
 
                 Vector3 tricoord = barycentric(currentTri, {(float) x,(float) y, 0.0});
 
+                float depth = interpolateZ(currentTri, tricoord);
+
+                // check if the current pixel is actually within the triangle.
                 if(tricoord.x >= 0 && tricoord.y >= 0 && tricoord.z >= 0) {
+
+                    // if the current tri is behind something in the z buffer, skip this pixel.
+                    if(zbuf[x][y] < depth) {
+                        continue;
+                    }
+
+                    // write the pixel to the z buffer
+                    zbuf[x][y] = depth;
+
                     // calculate the fragment color (apply fragment shader type code here)
                     SDL_Color fragColor = interpolateColor(currentTri, tricoord);
 
-                    // the point is within the triangle
+                    // write the pixel to the screen
                     *currentPixel = SDL_MapRGBA(surface->format, fragColor.r, fragColor.g, fragColor.b, fragColor.a);
                 }
             }
@@ -122,6 +172,14 @@ Vector3 barycentric(Tri t, Vector3 p) {
  * Put it all together.
  */
 void render3D(Tri *meshdata, int triCount, SDL_Surface *screen, Mat4 cam) {
+    // initialization of z-buffer if necessary
+    if(zbuf == NULL) {
+        initZBuf(screen->w, screen->h);
+    }
+    else {
+        resetZbuf(screen->w, screen->h);
+    }
+
     // space transforms
     Tri *screenspace = (Tri*) malloc(sizeof(Tri) * triCount);
     convertToWindowCoordinates(meshdata, triCount, screenspace, cam);

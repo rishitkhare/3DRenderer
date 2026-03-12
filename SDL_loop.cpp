@@ -50,7 +50,6 @@ int init_window(SDL_Window **windowOut, SDL_Surface **screenSurfaceOut) {
     return 0;
 }
 
-
 void doLoop(SDL_Window *window, SDL_Surface *screenSurface) {
     // Event loop
     SDL_Event e;
@@ -70,7 +69,7 @@ void doLoop(SDL_Window *window, SDL_Surface *screenSurface) {
 
         },
     {
-            {{0, 0, 50}, {255,0,0,255}},
+            {{0, 0, 150}, {255,0,0,255}},
             {{0, 100, 100},  {0,255,0,255}},
             {{-100, 0, 100},  {0,0,255,255}},
 
@@ -162,8 +161,10 @@ void doLoop(SDL_Window *window, SDL_Surface *screenSurface) {
 
     }
 }
+int gameExit(SDL_Window *window, SDL_Surface *screenSurface) {
+    // destruct z buffer in renderer
+    destructZbuf(screenSurface->w, screenSurface->h);
 
-int gameExit(SDL_Window *window) {
     // Destroy window
     SDL_DestroyWindow(window);
 
@@ -172,3 +173,4 @@ int gameExit(SDL_Window *window) {
 
     return 0;
 }
+

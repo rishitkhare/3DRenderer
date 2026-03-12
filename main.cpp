@@ -22,5 +22,5 @@ int main(int argc, char* args[]) {
 
     doLoop(window, surface);
 
-    gameExit(window);
+    gameExit(window, surface);
 }

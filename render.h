@@ -13,9 +13,9 @@
 
 void destructZbuf(int x, int y);
 
-void render3D(Tri *meshdata, int triCount, SDL_Surface *screen, Mat4 cam);
+void render3D(Tri *meshdata, int triCount, SDL_Surface *screen, Mat4 model, Mat4 cam);
 
-void convertToWindowCoordinates(Tri *meshdata, int triCount, Tri *result, Mat4 cam);
+void convertToWindowCoordinates(Tri *meshdata, int triCount, Tri *result, Mat4 modelTransform, Mat4 cameraTransform);
 
 void renderTris(Tri *screenSpaceData, int triCount, SDL_Surface *surface);
 

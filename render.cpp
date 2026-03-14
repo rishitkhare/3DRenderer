@@ -32,17 +32,20 @@ void destructZbuf(int x, int y) {
     free(zbuf);
 }
 
+// takes all three points in the triangle and applies the mat4 as an affine transformation.
+void multiplyTriByMatrix(Tri *triPtr, Mat4 *matPtr) {
+    triPtr->v1.position = vec3(multiply(*matPtr, vec4(triPtr->v1.position)));
+    triPtr->v2.position = vec3(multiply(*matPtr, vec4(triPtr->v2.position)));
+    triPtr->v3.position = vec3(multiply(*matPtr, vec4(triPtr->v3.position)));
+}
+
 /*
  * Take an array of triangles (in camera space)
  * and converts them all into screen space.
  */
-void convertToWindowCoordinates(Tri *meshdata, int triCount, Tri *result, Mat4 cam) {
-    // clipping planes
-    float near = 10.f; // plane defined as z = near
-    float far = 80000.f; // plane defined as z = far
-    float clipRange = far - near;
+void convertToWindowCoordinates(Tri *meshdata, int triCount, Tri *result, Mat4 modelTransform, Mat4 cameraTransform) {
 
-    // matrix to convert a scree
+    // matrix to convert a screen space
     Mat4 planeToScreen {{
             {180, 0, 0, 180},
             {0, -180, 0, 180},
@@ -51,10 +54,12 @@ void convertToWindowCoordinates(Tri *meshdata, int triCount, Tri *result, Mat4 c
     }};
 
 
-
     // TODO parallelize these pixel calculations using worker threads?
     for(int i = 0; i < triCount; i++) {
         result[i] = meshdata[i];
+
+        multiplyTriByMatrix(&result[i], &modelTransform);
+        multiplyTriByMatrix(&result[i], &cameraTransform);
 
         result[i].v1.position.x /= result[i].v1.position.z;
         result[i].v1.position.y /= result[i].v1.position.z;
@@ -65,9 +70,7 @@ void convertToWindowCoordinates(Tri *meshdata, int triCount, Tri *result, Mat4 c
         result[i].v3.position.x /= result[i].v3.position.z;
         result[i].v3.position.y /= result[i].v3.position.z;
 
-        result[i].v1.position = vec3(multiply(planeToScreen, vec4(result[i].v1.position)));
-        result[i].v2.position = vec3(multiply(planeToScreen, vec4(result[i].v2.position)));
-        result[i].v3.position = vec3(multiply(planeToScreen, vec4(result[i].v3.position)));
+        multiplyTriByMatrix(&result[i], &planeToScreen);
     }
 }
 
@@ -89,11 +92,22 @@ void renderTris(Tri *screenSpaceData, int triCount, SDL_Surface *surface) {
     // and determine if the pixel intersects with the triangle (and color it)
     Uint32 *pixels = (Uint32*)surface->pixels;
 
+    // clipping planes
+    float near = 1.f; // plane defined as z = near
+    float far = 80000.f; // plane defined as z = far
+
     for(int i = 0; i < triCount; i++) {
         Tri currentTri = screenSpaceData[i];
 
-        for(int y = 0; y < surface->h; y++) {
-            for(int x = 0; x < surface->w; x++) {
+        // calculate a bounding box for the triangle before iterating over tris
+        int minX = (int) fminf(fminf(currentTri.v1.position.x, currentTri.v2.position.x), currentTri.v3.position.x) - 1;
+        int minY = (int) fminf(fminf(currentTri.v1.position.y, currentTri.v2.position.y), currentTri.v3.position.y) - 1;
+        int maxX = (int) fmaxf(fmaxf(currentTri.v1.position.x, currentTri.v2.position.x), currentTri.v3.position.x) + 1;
+        int maxY = (int) fmaxf(fmaxf(currentTri.v1.position.y, currentTri.v2.position.y), currentTri.v3.position.y) + 1;
+
+        // iterate over the pixels in the bounding box (do not go past edges of screen)
+        for(int y = minY > 0 ? minY : 0; y < (maxY < surface->h ? maxY : surface->h); y++) {
+            for(int x = minX > 0 ? minX : 0; x < (maxX < surface->w ? maxX : surface->w); x++) {
                 // address arithmetic - "pitch" tells us the length of each row, in bytes,
                 // and each individual pixel is an uint32.
                 Uint32 *currentPixel = ((Uint32*) (((char*) pixels) + (surface->pitch * y))) + x;
@@ -107,6 +121,11 @@ void renderTris(Tri *screenSpaceData, int triCount, SDL_Surface *surface) {
 
                     // if the current tri is behind something in the z buffer, skip this pixel.
                     if(zbuf[x][y] < depth) {
+                        continue;
+                    }
+
+                    // if the current pixel is not within the near or far plane, skip writing the pixel.
+                    if(depth < near || depth > far) {
                         continue;
                     }
 
@@ -171,7 +190,7 @@ Vector3 barycentric(Tri t, Vector3 p) {
 /*
  * Put it all together.
  */
-void render3D(Tri *meshdata, int triCount, SDL_Surface *screen, Mat4 cam) {
+void render3D(Tri *meshdata, int triCount, SDL_Surface *screen, Mat4 model, Mat4 cam) {
     // initialization of z-buffer if necessary
     if(zbuf == NULL) {
         initZBuf(screen->w, screen->h);
@@ -182,7 +201,7 @@ void render3D(Tri *meshdata, int triCount, SDL_Surface *screen, Mat4 cam) {
 
     // space transforms
     Tri *screenspace = (Tri*) malloc(sizeof(Tri) * triCount);
-    convertToWindowCoordinates(meshdata, triCount, screenspace, cam);
+    convertToWindowCoordinates(meshdata, triCount, screenspace, model, cam);
 
     // put triangles through the rasterizer!
     renderTris(screenspace, triCount, screen);
